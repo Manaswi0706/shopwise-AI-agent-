@@ -243,13 +243,19 @@ def main():
     # Results section
     result = st.session_state.last_result
     if result:
-        st.divider()
-        st.header("🎯 Recommended products")
+        intent = result.get("requirements", {}).get("intent")
         products = result.get("ranked_products") or []
+
+        # Only display the recommendations section if products were returned,
+        # or if the user performed a product search that yielded no matches.
         if products:
+            st.divider()
+            st.header("🎯 Recommended products")
             for i, product in enumerate(products):
                 show_product(product, i)
-        else:
+        elif intent not in ["greeting", "unsupported_category"]:
+            st.divider()
+            st.header("🎯 Recommended products")
             st.warning("No ranked products were returned. Try a broader request or check the sample catalogue.")
 
         # Section 7: Interactive Comparison and Shortlist actions
