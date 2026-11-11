@@ -4,6 +4,7 @@ Provides mock database operations, inventory search, product comparison,
 stock checks, and customer shortlisting.
 """
 
+import re
 from typing import Any, Dict, List, Optional
 
 # Sample Catalogue - Clearly labeled as sample/demo data
@@ -218,12 +219,19 @@ def search_products(
         # Text query filter
         if query:
             q = query.lower()
-            name_match = q in item.get("name", "").lower()
-            brand_match = q in item.get("brand", "").lower()
-            cat_match = q in item.get("category", "").lower()
-            desc_match = any(q in str(v).lower() for v in item.get("specs", {}).values())
-            if not (name_match or brand_match or cat_match or desc_match):
-                continue
+            stopwords = {"show", "me", "find", "a", "an", "the", "in", "for", "with", "of", "to", "get", "give", "some", "any", "good", "best", "available", "suggest"}
+            tokens = [t for t in re.findall(r'\b\w+\b', q) if t not in stopwords and not t.isdigit()]
+            if tokens:
+                item_text = (
+                    item.get("name", "") + " " +
+                    item.get("brand", "") + " " +
+                    item.get("category", "") + " " +
+                    " ".join(str(v) for v in item.get("specs", {}).values())
+                ).lower()
+                # Check if query matches directly or via word stems
+                match = any(t in item_text or (t.rstrip("s") in item_text if len(t) > 3 else False) for t in tokens)
+                if not match:
+                    continue
 
         results.append(dict(item))
 

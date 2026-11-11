@@ -38,9 +38,11 @@ def _extract_requirements(user_message: str) -> Dict[str, Any]:
     }
 
     # Intent detection
-    if "compare" in text or "versus" in text or " vs " in text:
+    if any(k in text for k in ["hi", "hello", "hey", "who are you", "what can you do", "help"]):
+        reqs["intent"] = "greeting"
+    elif "compare" in text or "versus" in text or " vs " in text:
         reqs["intent"] = "compare"
-    elif "accessory" in text or "compatib" in text:
+    elif "compatib" in text:
         reqs["intent"] = "accessory_compatibility"
     elif "shortlist" in text or "save" in text or "favorite" in text:
         reqs["intent"] = "shortlist"
@@ -50,8 +52,11 @@ def _extract_requirements(user_message: str) -> Dict[str, Any]:
     # Category extraction
     if any(k in text for k in ["phone", "smartphone", "mobile"]):
         reqs["category"] = "smartphone"
-    elif any(k in text for k in ["accessory", "charger", "earbuds", "case", "cover"]):
+    elif any(k in text for k in ["accessory", "accessories", "charger", "earbuds", "buds", "case", "cover"]):
         reqs["category"] = "accessory"
+    elif any(k in text for k in ["laptop", "pc", "computer", "tv", "television", "watch", "shoe", "clothing"]):
+        reqs["category"] = "unsupported"
+        reqs["intent"] = "unsupported_category"
 
     # Price / Budget extraction (e.g., "under 18,000", "under 18000", "below 20k", "< 15000")
     price_match = re.search(r'(?:under|below|max|budget of|within|<|<=)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)(?:\s*(k))?', text)
@@ -89,7 +94,23 @@ def _extract_requirements(user_message: str) -> Dict[str, Any]:
 
 def _create_plan(intent: str, reqs: Dict[str, Any]) -> Dict[str, Any]:
     """Formulate an explicit execution plan with a goal and concrete steps."""
-    if intent == "compare":
+    if intent == "greeting":
+        return {
+            "goal": "Welcome user and introduce SmartCart AI capabilities.",
+            "steps": [
+                "Acknowledge user greeting",
+                "Present supported shopping tasks and sample catalogue scope"
+            ]
+        }
+    elif intent == "unsupported_category":
+        return {
+            "goal": "Inform user of sample catalogue scope and recommend available categories.",
+            "steps": [
+                "Detect out-of-scope product request",
+                "Provide guidance on available smartphone & accessory demo inventory"
+            ]
+        }
+    elif intent == "compare":
         return {
             "goal": "Compare specifications and pricing of requested products.",
             "steps": [
@@ -171,7 +192,38 @@ def run_smartcart_agent(user_message: str, session_id: str = "demo") -> Dict[str
     intent = reqs["intent"]
 
     # Branch according to intent
-    if intent == "compare":
+    if intent == "greeting":
+        answer = (
+            "👋 **Hello! I'm SmartCart AI**, your intelligent shopping assistant.\n\n"
+            "I can help you explore and evaluate products with full planning and tool-use transparency:\n"
+            "- 📱 **Search phones by budget & RAM**: e.g., *'Find a phone under ₹18,000 with at least 8 GB RAM'*\n"
+            "- ⚖️ **Compare two phones**: e.g., *'Compare the top two options'*\n"
+            "- 🔌 **Check accessory compatibility**: e.g., *'Find an accessory for product ID 1 and check compatibility'*\n"
+            "- ⭐ **Manage your shortlist**: e.g., *'Add product ID 1 to my shortlist'*\n\n"
+            "> *Demo notice: For this hackathon, my catalogue contains sample smartphones and accessories.*"
+        )
+        evaluation = {
+            "criteria_met": True,
+            "intent": "greeting",
+            "notes": "Acknowledged user greeting and introduced capabilities."
+        }
+
+    elif intent == "unsupported_category":
+        answer = (
+            "I noticed you're searching for an item outside our current sample catalogue.\n\n"
+            "For this hackathon demo, SmartCart AI is specifically configured with **smartphones** and **mobile accessories** (chargers, cases, wireless earbuds).\n\n"
+            "Please try one of our supported shopping queries:\n"
+            "- 📱 *'Find a phone under ₹18,000 with at least 8 GB RAM'*\n"
+            "- 🔌 *'Show me chargers'* or *'Samsung accessories'*\n"
+            "- ⚖️ *'Compare the top two options'*"
+        )
+        evaluation = {
+            "criteria_met": False,
+            "intent": "unsupported_category",
+            "notes": "Requested product is outside sample catalogue scope."
+        }
+
+    elif intent == "compare":
         # Target IDs: look for explicitly mentioned IDs, default to "1" and "2"
         p_ids = reqs["target_product_ids"]
         if len(p_ids) < 2:
@@ -298,11 +350,13 @@ def run_smartcart_agent(user_message: str, session_id: str = "demo") -> Dict[str
     else:
         # Default: Product search and ranking
         # 1. Search catalogue
+        cat = reqs.get("category")
+        target_category = cat if cat in ["smartphone", "accessory"] else "smartphone"
         search_res = tool_search_catalogue(
-            query=None if reqs.get("category") == "smartphone" else user_message,
+            query=user_message if target_category != "smartphone" else None,
             max_price=reqs.get("max_price"),
             min_ram=reqs.get("min_ram"),
-            category=reqs.get("category") or "smartphone",
+            category=target_category,
             brand=reqs.get("brand_preference")
         )
         tool_results.append(search_res)
@@ -363,21 +417,24 @@ def run_smartcart_agent(user_message: str, session_id: str = "demo") -> Dict[str
         # 5. Answer synthesis
         if ranked_products:
             top_pick = ranked_products[0]
+            prod_label = target_category if target_category else "product"
             summary_lines = []
             for idx, p in enumerate(ranked_products[:3], 1):
+                ram_spec = f" | {p.get('ram_gb')} GB RAM" if p.get('ram_gb') is not None else ""
                 summary_lines.append(
-                    f"{idx}. **{p.get('name')}** — ₹{p.get('price'):,.0f} | {p.get('ram_gb')} GB RAM | Match score: **{p.get('match_score')}/100**\n"
+                    f"{idx}. **{p.get('name')}** — ₹{p.get('price'):,.0f}{ram_spec} | Match score: **{p.get('match_score')}/100**\n"
                     f"   *{p.get('recommendation_reason')}*"
                 )
             answer = (
-                f"I found **{len(ranked_products)} smartphone(s)** matching your criteria:\n\n"
+                f"I found **{len(ranked_products)} {prod_label}(s)** matching your criteria:\n\n"
                 + "\n\n".join(summary_lines)
-                + f"\n\n**Top Recommendation**: **{top_pick.get('name')}** is the best match offering balanced specs within your specified budget."
+                + f"\n\n**Top Recommendation**: **{top_pick.get('name')}** is the best match offering balanced specs within your criteria."
             )
         else:
+            cat_label = target_category or "product"
             answer = (
-                "I searched the sample catalogue but couldn't find any phones strictly matching all your criteria. "
-                "Try relaxing the budget or RAM constraints."
+                f"I searched the sample catalogue but couldn't find any {cat_label}s strictly matching all your criteria. "
+                "Try relaxing the budget or constraints, or ask for available smartphones or accessories."
             )
 
     # Optional Gemini enhancement if GEMINI_API_KEY is configured
