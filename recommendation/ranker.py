@@ -35,10 +35,19 @@ def rank_products(
         price = prod.get("price")
         if budget is not None and price is not None:
             if price <= budget:
-                savings = budget - price
-                budget_score = 25.0 + min(5.0, (savings / budget) * 10)
+                if budget >= 40000:
+                    tier_ratio = price / budget
+                    if tier_ratio >= 0.5:
+                        budget_score = 30.0
+                        reasons.append(f"Flagship match for ₹{budget:,.0f} budget (₹{price:,.0f})")
+                    else:
+                        budget_score = 15.0 + (tier_ratio * 15.0)
+                        reasons.append(f"Significantly below your ₹{budget:,.0f} budget tier (₹{price:,.0f})")
+                else:
+                    savings = budget - price
+                    budget_score = 25.0 + min(5.0, (savings / budget) * 10)
+                    reasons.append(f"Within budget (₹{price:,.0f} <= ₹{budget:,.0f})")
                 score += budget_score
-                reasons.append(f"Within budget (₹{price:,.0f} <= ₹{budget:,.0f})")
             else:
                 over = price - budget
                 penalty = min(30.0, (over / budget) * 40.0)
@@ -88,8 +97,12 @@ def rank_products(
 
         ranked.append(prod)
 
-    # Sort descending by match_score, then ascending by price
-    ranked.sort(key=lambda x: (x.get("match_score", 0), -(x.get("price") or 999999)), reverse=True)
+    # For flagship/premium budgets (>= 40k), rank higher-tier devices closer to budget first:
+    if budget and budget >= 40000:
+        ranked.sort(key=lambda x: (x.get("match_score", 0), x.get("price") or 0), reverse=True)
+    else:
+        # For value queries, sort descending by match_score, then ascending by price
+        ranked.sort(key=lambda x: (x.get("match_score", 0), -(x.get("price") or 999999)), reverse=True)
     return ranked
 
 

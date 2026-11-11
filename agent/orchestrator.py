@@ -58,14 +58,20 @@ def _extract_requirements(user_message: str) -> Dict[str, Any]:
         reqs["category"] = "unsupported"
         reqs["intent"] = "unsupported_category"
 
-    # Price / Budget extraction (e.g., "under 18,000", "under 18000", "below 20k", "< 15000")
-    price_match = re.search(r'(?:under|below|max|budget of|within|<|<=)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)(?:\s*(k))?', text)
+    # Price / Budget extraction (e.g., "under 18,000", "below 20k", "in a range of 1.5 lakh", "around 1.5L")
+    price_match = re.search(
+        r'(?:under|below|max|budget of|budget|within|range of|around|upto|up to|<|<=)\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)\s*(k|lakhs?|lacs?|l)?\b',
+        text
+    )
     if price_match:
         val_str = price_match.group(1).replace(",", "")
         try:
             val = float(val_str)
-            if price_match.group(2) == 'k':
+            unit = price_match.group(2)
+            if unit == 'k':
                 val *= 1000
+            elif unit in ['lakh', 'lakhs', 'lac', 'lacs', 'l']:
+                val *= 100000
             reqs["max_price"] = val
         except ValueError:
             pass

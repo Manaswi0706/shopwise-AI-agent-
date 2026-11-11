@@ -167,6 +167,69 @@ SAMPLE_CATALOGUE: List[Dict[str, Any]] = [
         },
         "compatible_with": ["2", "3"],
         "recommendation_reason": "Official 33W adapter compatible with Xiaomi / Redmi devices."
+    },
+    {
+        "product_id": "9",
+        "name": "Apple iPhone 15 Pro Max",
+        "category": "smartphone",
+        "brand": "Apple",
+        "price": 149900,
+        "ram_gb": 8,
+        "storage_gb": 256,
+        "stock": 12,
+        "rating": 4.8,
+        "specs": {
+            "display": "6.7-inch Super Retina XDR OLED, 120Hz ProMotion",
+            "battery": "4422 mAh with MagSafe & 25W Charging",
+            "processor": "Apple A17 Pro (3nm)",
+            "camera": "48MP Main + 12MP 5x Periscope + 12MP Ultra-Wide",
+            "os": "iOS 17",
+            "charger_in_box": False,
+        },
+        "compatible_accessories": ["5", "6"],
+        "recommendation_reason": "Top flagship pick in the ₹1.5 Lakh tier with titanium chassis, A17 Pro chip, and pro-grade 5x optical zoom."
+    },
+    {
+        "product_id": "10",
+        "name": "Samsung Galaxy S24 Ultra 5G",
+        "category": "smartphone",
+        "brand": "Samsung",
+        "price": 129999,
+        "ram_gb": 12,
+        "storage_gb": 256,
+        "stock": 18,
+        "rating": 4.8,
+        "specs": {
+            "display": "6.8-inch Dynamic LTPO AMOLED 2X, 120Hz, 2600 nits",
+            "battery": "5000 mAh with 45W Fast Charging",
+            "processor": "Snapdragon 8 Gen 3 for Galaxy",
+            "camera": "200MP Main + 50MP 5x Periscope + 10MP 3x + 12MP",
+            "os": "Android 14, One UI 6.1 (Galaxy AI)",
+            "charger_in_box": False,
+        },
+        "compatible_accessories": ["5", "6", "7"],
+        "recommendation_reason": "Ultra-premium Android flagship within ₹1.5 Lakh with 12GB RAM, 200MP camera, titanium frame, and Galaxy AI."
+    },
+    {
+        "product_id": "11",
+        "name": "Google Pixel 8 Pro",
+        "category": "smartphone",
+        "brand": "Google",
+        "price": 106999,
+        "ram_gb": 12,
+        "storage_gb": 128,
+        "stock": 9,
+        "rating": 4.6,
+        "specs": {
+            "display": "6.7-inch LTPO OLED, 120Hz, 2400 nits",
+            "battery": "5050 mAh with 30W Fast Charging",
+            "processor": "Google Tensor G3",
+            "camera": "50MP Main + 48MP 5x Telephoto + 48MP Ultra-Wide",
+            "os": "Android 14 (7 years OS updates)",
+            "charger_in_box": False,
+        },
+        "compatible_accessories": ["5", "6"],
+        "recommendation_reason": "Flagship device with cutting-edge Google AI camera processing and long-term OS support."
     }
 ]
 
